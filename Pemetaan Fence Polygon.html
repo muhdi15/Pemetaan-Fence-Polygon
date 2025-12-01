@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemetaan Fence Polygon - Buat dan Ekspor GeoJSON</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 1.2rem 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h1 i {
+            color: #f1c40f;
+        }
+        
+        .subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 380px;
+            background-color: white;
+            padding: 1.5rem;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #3498db;
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-title i {
+            color: #3498db;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #636e72;
+        }
+        
+        .coordinates-display {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px dashed #ddd;
+        }
+        
+        .coordinates-display h4 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        .fence-info {
+            background-color: #e8f4fc;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .fence-info.active {
+            display: block;
+        }
+        
+        .fence-info-item {
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .fence-info-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .fence-info-value {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .fence-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .fence-type-btn {
+            flex: 1;
+            padding: 0.7rem;
+            text-align: center;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .fence-type-btn.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        
+        .fence-type-btn i {
+            margin-right: 5px;
+        }
+        
+        .instructions {
+            background-color: #fff8e1;
+            border-left: 4px solid #f1c40f;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .instructions ol {
+            margin-left: 1.2rem;
+            margin-top: 0.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 40vh;
+            }
+            
+            .map-container {
+                height: 60vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1><i class="fas fa-draw-polygon"></i> Pemetaan Fence Polygon</h1>
+                    <p class="subtitle">Buat fence (garis polygon), isolasi area, dan ekspor ke format GeoJSON</p>
+                </div>
+                <div style="font-size: 1.5rem;">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-crosshairs"></i> AutoZoom ke Lokasi</h3>
+                    <div class="input-group">
+                        <label for="latitude">Latitude (Garis Lintang)</label>
+                        <input type="number" id="latitude" step="any" placeholder="Contoh: -6.2088" value="-6.2088">
+                    </div>
+                    <div class="input-group">
+                        <label for="longitude">Longitude (Garis Bujur)</label>
+                        <input type="number" id="longitude" step="any" placeholder="Contoh: 106.8456" value="106.8456">
+                    </div>
+                    <div class="button-group">
+                        <button id="zoomBtn" class="btn-primary">
+                            <i class="fas fa-search-location"></i> Zoom ke Lokasi
+                        </button>
+                        <button id="addMarkerBtn" class="btn-secondary">
+                            <i class="fas fa-map-marker-alt"></i> Tambah Marker
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title"><i class="fas fa-draw-polygon"></i> Kontrol Fence Polygon</h3>
+                    
+                    <div class="fence-type-selector">
+                        <div class="fence-type-btn active" id="polygonFenceBtn">
+                            <i class="fas fa-vector-square"></i> Polygon
+                        </div>
+                        <div class="fence-type-btn" id="polylineFenceBtn">
+                            <i class="fas fa-draw-polygon"></i> Polyline
+                        </div>
+                        <div class="fence-type-btn" id="rectangleFenceBtn">
+                            <i class="fas fa-square"></i> Rectangle
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="drawFenceBtn" class="btn-success">
+                            <i class="fas fa-pencil-alt"></i> Gambar Fence
+                        </button>
+                        <button id="editFenceBtn" class="btn-warning" disabled>
+                            <i class="fas fa-edit"></i> Edit Fence
+                        </button>
+                        <button id="clearFenceBtn" class="btn-danger">
+                            <i class="fas fa-trash-alt"></i> Hapus Fence
+                        </button>
+                    </div>
+                    
+                    <div class="coordinates-display">
+                        <h4>Koordinat Fence:</h4>
+                        <div id="coordinatesList">Belum ada fence yang digambar</div>
+                    </div>
+                    
+                    <div class="fence-info" id="fenceInfo">
+                        <h4>Informasi Fence:</h4>
+                        <div class="fence-info-item">
+                            <span class="fence-info-label">Jenis:</span>
+                            <span class="fence-info-value" id="fenceType">-</span>
+                        </div>
+                        <div class="fence-info-item">
+                            <span class="fence-info-label">Jumlah Titik:</span>
+                            <span class="fence-info-value" id="pointCount">0</span>
+                        </div>
+                        <div class="fence-info-item">
+                            <span class="fence-info-label">Panjang:</span>
+                            <span class="fence-info-value" id="fenceLength">0 m</span>
+                        </div>
+                        <div class="fence-info-item">
+                            <span class="fence-info-label">Luas Area:</span>
+                            <span class="fence-info-value" id="areaResult">0 m²</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group" style="margin-top: 1rem;">
+                        <button id="exportBtn" class="btn-warning">
+                            <i class="fas fa-file-export"></i> Ekspor ke GeoJSON
+                        </button>
+                        <button id="isolateAreaBtn" class="btn-primary">
+                            <i class="fas fa-expand"></i> Isolasi Area
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h4><i class="fas fa-info-circle"></i> Petunjuk Penggunaan:</h4>
+                    <ol>
+                        <li>Masukkan koordinat latitude dan longitude, lalu klik "Zoom ke Lokasi"</li>
+                        <li>Pilih jenis fence (Polygon, Polyline, atau Rectangle)</li>
+                        <li>Klik "Gambar Fence" untuk mulai menggambar fence di peta</li>
+                        <li>Setelah selesai, gunakan "Edit Fence" untuk mengubah bentuk</li>
+                        <li>Klik "Isolasi Area" untuk melihat area yang terisolasi oleh fence</li>
+                        <li>Klik "Ekspor ke GeoJSON" untuk menyimpan fence dan area yang telah dibuat</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Dibuat dengan <i class="fas fa-heart" style="color:#e74c3c;"></i> menggunakan Leaflet.js | © 2023 Pemetaan Fence Polygon</p>
+        </footer>
+    </div>
+
+    <!-- Modal untuk menampilkan GeoJSON -->
+    <div id="jsonModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: white; margin: 5% auto; padding: 2rem; border-radius: 10px; width: 80%; max-width: 800px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #2c3e50;"><i class="fas fa-file-code"></i> GeoJSON Data</h2>
+                <button id="closeModal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #7f8c8d;">&times;</button>
+            </div>
+            <pre id="jsonOutput" style="background-color: #f8f9fa; padding: 1rem; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;"></pre>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem;">
+                <button id="copyBtn" class="btn-primary" style="width: auto;">
+                    <i class="fas fa-copy"></i> Salin ke Clipboard
+                </button>
+                <button id="downloadBtn" class="btn-success" style="width: auto;">
+                    <i class="fas fa-download"></i> Unduh File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+    <script>
+        // Inisialisasi peta
+        const map = L.map('map').setView([-6.2088, 106.8456], 13);
+        
+        // Tambahkan tile layer dari OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Variabel untuk menggambar fence
+        let drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+        
+        // Variabel untuk area yang terisolasi
+        let isolatedArea = null;
+        
+        // Kontrol gambar Leaflet
+        let drawControl;
+        
+        // Jenis fence yang aktif
+        let activeFenceType = 'polygon';
+        
+        // Layer fence yang aktif
+        let activeFence = null;
+        
+        // Fungsi untuk mengubah jenis fence
+        document.querySelectorAll('.fence-type-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Hapus kelas active dari semua tombol
+                document.querySelectorAll('.fence-type-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                
+                // Tambahkan kelas active ke tombol yang diklik
+                this.classList.add('active');
+                
+                // Perbarui jenis fence aktif
+                activeFenceType = this.id.replace('FenceBtn', '');
+                
+                // Reset kontrol gambar jika sedang aktif
+                if (drawControl) {
+                    drawControl.remove();
+                    drawControl = null;
+                    
+                    // Reset tombol gambar
+                    document.getElementById('drawFenceBtn').innerHTML = '<i class="fas fa-pencil-alt"></i> Gambar Fence';
+                    document.getElementById('drawFenceBtn').classList.remove('btn-warning');
+                    document.getElementById('drawFenceBtn').classList.add('btn-success');
+                }
+            });
+        });
+        
+        // Fungsi untuk zoom ke lokasi yang diinput
+        document.getElementById('zoomBtn').addEventListener('click', function() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('Masukkan nilai latitude dan longitude yang valid!');
+                return;
+            }
+            
+            if (lat < -90 || lat > 90) {
+                alert('Latitude harus antara -90 dan 90 derajat!');
+                return;
+            }
+            
+            if (lng < -180 || lng > 180) {
+                alert('Longitude harus antara -180 dan 180 derajat!');
+                return;
+            }
+            
+            map.setView([lat, lng], 15);
+            
+            // Tambahkan marker di lokasi
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup(`Lokasi: ${lat.toFixed(6)}, ${lng.toFixed(6)}`)
+                .openPopup();
+        });
+        
+        // Fungsi untuk menambah marker
+        document.getElementById('addMarkerBtn').addEventListener('click', function() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('Masukkan nilai latitude dan longitude yang valid terlebih dahulu!');
+                return;
+            }
+            
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup(`Marker: ${lat.toFixed(6)}, ${lng.toFixed(6)}`)
+                .openPopup();
+        });
+        
+        // Fungsi untuk menggambar fence
+        document.getElementById('drawFenceBtn').addEventListener('click', function() {
+            // Hapus kontrol gambar sebelumnya jika ada
+            if (drawControl) {
+                drawControl.remove();
+                drawControl = null;
+                
+                // Reset tombol
+                document.getElementById('drawFenceBtn').innerHTML = '<i class="fas fa-pencil-alt"></i> Gambar Fence';
+                document.getElementById('drawFenceBtn').classList.remove('btn-warning');
+                document.getElementById('drawFenceBtn').classList.add('btn-success');
+                return;
+            }
+            
+            // Reset fence sebelumnya
+            if (activeFence) {
+                drawnItems.removeLayer(activeFence);
+                activeFence = null;
+            }
+            
+            // Reset area yang terisolasi
+            if (isolatedArea) {
+                map.removeLayer(isolatedArea);
+                isolatedArea = null;
+            }
+            
+            // Reset tampilan informasi
+            updateCoordinatesList();
+            document.getElementById('fenceInfo').classList.remove('active');
+            
+            // Konfigurasi berdasarkan jenis fence
+            let drawOptions = {
+                polyline: false,
+                polygon: false,
+                rectangle: false,
+                circle: false,
+                marker: false,
+                circlemarker: false
+            };
+            
+            let shapeOptions = {
+                color: '#3498db',
+                fillColor: '#3498db',
+                fillOpacity: 0.2,
+                weight: 3
+            };
+            
+            // Aktifkan kontrol berdasarkan jenis fence
+            if (activeFenceType === 'polygon') {
+                drawOptions.polygon = {
+                    shapeOptions: shapeOptions,
+                    showArea: true,
+                    metric: true
+                };
+            } else if (activeFenceType === 'polyline') {
+                drawOptions.polyline = {
+                    shapeOptions: {
+                        color: '#e74c3c',
+                        weight: 3
+                    }
+                };
+            } else if (activeFenceType === 'rectangle') {
+                drawOptions.rectangle = {
+                    shapeOptions: shapeOptions
+                };
+            }
+            
+            // Buat kontrol gambar
+            drawControl = new L.Control.Draw({
+                draw: drawOptions,
+                edit: {
+                    featureGroup: drawnItems
+                }
+            });
+            
+            map.addControl(drawControl);
+            
+            // Aktifkan mode gambar
+            if (activeFenceType === 'polygon') {
+                drawControl._toolbars.draw._modes.polygon.handler.enable();
+            } else if (activeFenceType === 'polyline') {
+                drawControl._toolbars.draw._modes.polyline.handler.enable();
+            } else if (activeFenceType === 'rectangle') {
+                drawControl._toolbars.draw._modes.rectangle.handler.enable();
+            }
+            
+            // Ubah teks tombol
+            document.getElementById('drawFenceBtn').innerHTML = '<i class="fas fa-times"></i> Batalkan Gambar';
+            document.getElementById('drawFenceBtn').classList.remove('btn-success');
+            document.getElementById('drawFenceBtn').classList.add('btn-warning');
+            
+            // Tambahkan event listener untuk setelah fence selesai digambar
+            map.on('draw:created', function(e) {
+                const layer = e.layer;
+                drawnItems.addLayer(layer);
+                activeFence = layer;
+                
+                // Nonaktifkan mode gambar
+                if (drawControl) {
+                    map.removeControl(drawControl);
+                    drawControl = null;
+                }
+                
+                // Kembalikan tombol ke keadaan semula
+                document.getElementById('drawFenceBtn').innerHTML = '<i class="fas fa-pencil-alt"></i> Gambar Fence';
+                document.getElementById('drawFenceBtn').classList.remove('btn-warning');
+                document.getElementById('drawFenceBtn').classList.add('btn-success');
+                
+                // Aktifkan tombol edit
+                document.getElementById('editFenceBtn').disabled = false;
+                
+                // Update tampilan koordinat
+                updateCoordinatesList();
+                
+                // Update informasi fence
+                updateFenceInfo();
+                
+                // Tampilkan informasi fence
+                document.getElementById('fenceInfo').classList.add('active');
+            });
+        });
+        
+        // Fungsi untuk mengedit fence
+        document.getElementById('editFenceBtn').addEventListener('click', function() {
+            if (!activeFence) {
+                alert('Tidak ada fence yang bisa diedit!');
+                return;
+            }
+            
+            // Buat kontrol edit
+            if (drawControl) {
+                map.removeControl(drawControl);
+            }
+            
+            drawControl = new L.Control.Draw({
+                draw: false,
+                edit: {
+                    featureGroup: drawnItems
+                }
+            });
+            
+            map.addControl(drawControl);
+            
+            // Aktifkan mode edit
+            drawControl._toolbars.edit._modes.edit.handler.enable();
+            
+            // Ubah teks tombol
+            document.getElementById('editFenceBtn').innerHTML = '<i class="fas fa-times"></i> Batalkan Edit';
+            document.getElementById('editFenceBtn').classList.remove('btn-warning');
+            document.getElementById('editFenceBtn').classList.add('btn-danger');
+            
+            // Event listener untuk setelah selesai edit
+            map.on('draw:edited', function(e) {
+                const layers = e.layers;
+                layers.eachLayer(function(layer) {
+                    if (layer === activeFence) {
+                        // Update tampilan koordinat
+                        updateCoordinatesList();
+                        
+                        // Update informasi fence
+                        updateFenceInfo();
+                        
+                        // Hapus area yang terisolasi jika ada
+                        if (isolatedArea) {
+                            map.removeLayer(isolatedArea);
+                            isolatedArea = null;
+                        }
+                    }
+                });
+                
+                // Nonaktifkan mode edit
+                if (drawControl) {
+                    map.removeControl(drawControl);
+                    drawControl = null;
+                }
+                
+                // Kembalikan tombol ke keadaan semula
+                document.getElementById('editFenceBtn').innerHTML = '<i class="fas fa-edit"></i> Edit Fence';
+                document.getElementById('editFenceBtn').classList.remove('btn-danger');
+                document.getElementById('editFenceBtn').classList.add('btn-warning');
+            });
+            
+            // Event listener untuk membatalkan edit
+            map.on('draw:drawstop', function() {
+                // Nonaktifkan mode edit
+                if (drawControl) {
+                    map.removeControl(drawControl);
+                    drawControl = null;
+                }
+                
+                // Kembalikan tombol ke keadaan semula
+                document.getElementById('editFenceBtn').innerHTML = '<i class="fas fa-edit"></i> Edit Fence';
+                document.getElementById('editFenceBtn').classList.remove('btn-danger');
+                document.getElementById('editFenceBtn').classList.add('btn-warning');
+            });
+        });
+        
+        // Fungsi untuk menghapus fence
+        document.getElementById('clearFenceBtn').addEventListener('click', function() {
+            drawnItems.clearLayers();
+            activeFence = null;
+            
+            // Hapus area yang terisolasi jika ada
+            if (isolatedArea) {
+                map.removeLayer(isolatedArea);
+                isolatedArea = null;
+            }
+            
+            // Nonaktifkan mode gambar/edit jika aktif
+            if (drawControl) {
+                map.removeControl(drawControl);
+                drawControl = null;
+                
+                // Kembalikan tombol ke keadaan semula
+                document.getElementById('drawFenceBtn').innerHTML = '<i class="fas fa-pencil-alt"></i> Gambar Fence';
+                document.getElementById('drawFenceBtn').classList.remove('btn-warning');
+                document.getElementById('drawFenceBtn').classList.add('btn-success');
+                
+                document.getElementById('editFenceBtn').innerHTML = '<i class="fas fa-edit"></i> Edit Fence';
+                document.getElementById('editFenceBtn').classList.remove('btn-danger');
+                document.getElementById('editFenceBtn').classList.add('btn-warning');
+                document.getElementById('editFenceBtn').disabled = true;
+            }
+            
+            updateCoordinatesList();
+            document.getElementById('fenceInfo').classList.remove('active');
+        });
+        
+        // Fungsi untuk mengisolasi area
+        document.getElementById('isolateAreaBtn').addEventListener('click', function() {
+            if (!activeFence) {
+                alert('Tidak ada fence untuk mengisolasi area! Gambar fence terlebih dahulu.');
+                return;
+            }
+            
+            // Hapus area yang terisolasi sebelumnya
+            if (isolatedArea) {
+                map.removeLayer(isolatedArea);
+            }
+            
+            // Buat area yang terisolasi berdasarkan fence
+            if (activeFenceType === 'polygon' || activeFenceType === 'rectangle') {
+                // Untuk polygon dan rectangle, area sudah terdefinisi
+                isolatedArea = activeFence;
+                
+                // Ubah style untuk menunjukkan area yang terisolasi
+                isolatedArea.setStyle({
+                    fillColor: '#27ae60',
+                    color: '#219653',
+                    fillOpacity: 0.4,
+                    weight: 3
+                });
+                
+                // Tambahkan popup
+                isolatedArea.bindPopup('Area yang terisolasi oleh fence').openPopup();
+                
+            } else if (activeFenceType === 'polyline') {
+                // Untuk polyline, buat buffer area
+                const latLngs = activeFence.getLatLngs();
+                const coordinates = latLngs.map(latLng => [latLng.lng, latLng.lat]);
+                
+                // Buat garis dari polyline
+                const line = turf.lineString(coordinates);
+                
+                // Buat buffer di sekitar garis (50 meter)
+                const buffer = turf.buffer(line, 0.05, { units: 'kilometers' });
+                
+                // Tambahkan buffer area ke peta
+                isolatedArea = L.geoJSON(buffer, {
+                    style: {
+                        fillColor: '#27ae60',
+                        color: '#219653',
+                        fillOpacity: 0.4,
+                        weight: 3
+                    }
+                }).addTo(map);
+                
+                isolatedArea.bindPopup('Area buffer 50m di sekitar fence polyline').openPopup();
+            }
+            
+            // Zoom ke area yang terisolasi
+            map.fitBounds(isolatedArea.getBounds());
+        });
+        
+        // Fungsi untuk memperbarui daftar koordinat
+        function updateCoordinatesList() {
+            const coordinatesList = document.getElementById('coordinatesList');
+            
+            if (!activeFence) {
+                coordinatesList.innerHTML = 'Belum ada fence yang digambar';
+                return;
+            }
+            
+            let latLngs;
+            let html = '<ol>';
+            
+            if (activeFenceType === 'polygon') {
+                latLngs = activeFence.getLatLngs()[0];
+            } else if (activeFenceType === 'polyline') {
+                latLngs = activeFence.getLatLngs();
+            } else if (activeFenceType === 'rectangle') {
+                latLngs = activeFence.getLatLngs()[0];
+            }
+            
+            latLngs.forEach((latLng, index) => {
+                html += `<li>${latLng.lat.toFixed(6)}, ${latLng.lng.toFixed(6)}</li>`;
+            });
+            
+            html += '</ol>';
+            coordinatesList.innerHTML = html;
+        }
+        
+        // Fungsi untuk memperbarui informasi fence
+        function updateFenceInfo() {
+            if (!activeFence) return;
+            
+            // Tentukan jenis fence
+            let fenceTypeText = '';
+            if (activeFenceType === 'polygon') fenceTypeText = 'Polygon';
+            else if (activeFenceType === 'polyline') fenceTypeText = 'Polyline';
+            else if (activeFenceType === 'rectangle') fenceTypeText = 'Rectangle';
+            
+            document.getElementById('fenceType').textContent = fenceTypeText;
+            
+            // Hitung jumlah titik
+            let latLngs;
+            if (activeFenceType === 'polygon' || activeFenceType === 'rectangle') {
+                latLngs = activeFence.getLatLngs()[0];
+            } else if (activeFenceType === 'polyline') {
+                latLngs = activeFence.getLatLngs();
+            }
+            
+            const pointCount = latLngs.length;
+            document.getElementById('pointCount').textContent = pointCount;
+            
+            // Hitung panjang fence (untuk polyline) atau perimeter (untuk polygon/rectangle)
+            let length = 0;
+            if (activeFenceType === 'polyline') {
+                // Hitung panjang polyline
+                for (let i = 0; i < pointCount - 1; i++) {
+                    length += latLngs[i].distanceTo(latLngs[i + 1]);
+                }
+                document.getElementById('fenceLength').textContent = `${length.toFixed(2)} m`;
+                document.getElementById('areaResult').textContent = 'Tidak tersedia';
+            } else {
+                // Hitung perimeter untuk polygon/rectangle
+                for (let i = 0; i < pointCount; i++) {
+                    const j = (i + 1) % pointCount;
+                    length += latLngs[i].distanceTo(latLngs[j]);
+                }
+                document.getElementById('fenceLength').textContent = `${length.toFixed(2)} m (perimeter)`;
+                
+                // Hitung luas area
+                let area = 0;
+                for (let i = 0; i < pointCount; i++) {
+                    const j = (i + 1) % pointCount;
+                    area += latLngs[i].lng * latLngs[j].lat;
+                    area -= latLngs[i].lat * latLngs[j].lng;
+                }
+                area = Math.abs(area / 2);
+                
+                // Konversi ke meter persegi (perkiraan kasar)
+                const areaM2 = (area * 111320 * 111320).toFixed(2);
+                document.getElementById('areaResult').textContent = `${areaM2} m²`;
+            }
+        }
+        
+        // Fungsi untuk mengekspor ke GeoJSON
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            if (!activeFence) {
+                alert('Tidak ada fence yang bisa diekspor. Gambar fence terlebih dahulu!');
+                return;
+            }
+            
+            const features = [];
+            
+            // Tambahkan fence sebagai fitur pertama
+            const fenceGeoJSON = activeFence.toGeoJSON();
+            fenceGeoJSON.properties = {
+                name: "Fence",
+                type: activeFenceType,
+                description: "Fence yang dibuat dengan Pemetaan Fence Polygon",
+                length: document.getElementById('fenceLength').textContent,
+                points: parseInt(document.getElementById('pointCount').textContent),
+                created: new Date().toISOString()
+            };
+            features.push(fenceGeoJSON);
+            
+            // Tambahkan area yang terisolasi jika ada
+            if (isolatedArea) {
+                let areaGeoJSON;
+                
+                if (activeFenceType === 'polyline') {
+                    // Untuk polyline, gunakan buffer area
+                    areaGeoJSON = isolatedArea.toGeoJSON();
+                } else {
+                    // Untuk polygon/rectangle, gunakan fence sebagai area
+                    areaGeoJSON = activeFence.toGeoJSON();
+                }
+                
+                areaGeoJSON.properties = {
+                    name: "Isolated Area",
+                    type: "Area",
+                    description: "Area yang terisolasi oleh fence",
+                    area: document.getElementById('areaResult').textContent,
+                    created: new Date().toISOString()
+                };
+                features.push(areaGeoJSON);
+            }
+            
+            const geoJSON = {
+                type: "FeatureCollection",
+                features: features
+            };
+            
+            // Tampilkan modal dengan GeoJSON
+            document.getElementById('jsonOutput').textContent = JSON.stringify(geoJSON, null, 2);
+            document.getElementById('jsonModal').style.display = 'block';
+        });
+        
+        // Fungsi untuk menutup modal
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('jsonModal').style.display = 'none';
+        });
+        
+        // Fungsi untuk menyalin ke clipboard
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('GeoJSON berhasil disalin ke clipboard!');
+            });
+        });
+        
+        // Fungsi untuk mengunduh file
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const geoJSON = JSON.parse(document.getElementById('jsonOutput').textContent);
+            const dataStr = JSON.stringify(geoJSON, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `fence_${new Date().getTime()}.geojson`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        });
+        
+        // Tutup modal jika klik di luar modal
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('jsonModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Inisialisasi peta dengan contoh marker
+        L.marker([-6.2088, 106.8456]).addTo(map)
+            .bindPopup('Contoh: Jakarta, Indonesia')
+            .openPopup();
+            
+        // Tambahkan lingkaran sebagai contoh area
+        L.circle([-6.2088, 106.8456], {
+            color: '#3498db',
+            fillColor: '#3498db',
+            fillOpacity: 0.1,
+            radius: 500
+        }).addTo(map).bindPopup('Area contoh radius 500m');
+    </script>
+</body>
+</html>
